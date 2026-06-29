@@ -1,59 +1,52 @@
-using QuantumToolbox
-using PyPlot
-using Printf
-using SparseArrays
-using LinearAlgebra
+# Main script to obtain QFI of given state in noisless case
+# For GKP state, use the specific script
+using PyPlot, Printf
 using Polynomials
 
-include("../modulos/fisher_functions.jl")
+include("../modules/fisher_functions.jl")
 
-N=78
+N=80
 phi=2.0
-dl=0.0001
+dl=1e-4
 nmax=5
-delta_tilde=1/5.0
-s=40
 QFI=zeros(nmax)
-fotones=zeros(nmax)
-numero=tensor(qeye(N),num(N)) + tensor(num(N),qeye(N))
-print("Introduce el tipo de estado: \n")
+photons=zeros(nmax)
+number=tensor(qeye(N),num(N)) + tensor(num(N),qeye(N)) # Total number of photons operator
+print("Input state: \n")
 tipo=readline()
 
 for n=1:nmax
-	psi=estado(tipo,N,n,delta_tilde,s)
-	fotones[n]=abs(psi'*numero*psi)
+	psi=estado(tipo,N,n,0)
+	photons[n]=abs(psi'*number*psi)
 	#rho1=ket2dm(interferometro(tipo,N,psi,phi))
 	#rho2=ket2dm(interferometro(tipo,N,psi,phi+dl))
 	psi1=interferometro(tipo,N,psi,phi)
 	psi2=interferometro(tipo,N,psi,phi+dl)
 	QFI[n]=get_QFI_ket(psi1,psi2,dl)
-	@printf("Iteración número: %i",n)
+	@printf("Iteration: %i",n)
 end
 
-#io=open(tipo*"_QFI_dm.txt","w")
-#@printf(io,"#N=%i;	n=%i\n",N,nmax)
-#@printf(io,"fot, QFI\n")
-#for i=1:length(QFI)
-#	@printf(io,"%9.7f %9.7f \n",fotones[i],QFI[i])
-#end
-#close(io)
+print("Print to file (F) or plot (P)?: \n")
+action=readline()
 
-#run(Cmd(`shutdown now`));
-reg1=fit(log.(fotones),log.(1 ./QFI),1)
-reg2=fit(log.(fotones),log.(1 ./(fotones .*(2 .+fotones))),1)
-label1=@sprintf("QFI, m=%f",reg1[1])
-label2=@sprintf("Teórico sin ruido: m=%f",reg2[1])
-plot(fotones,1 ./QFI,"sb",label=label1)
-plot(fotones,1 ./(fotones.^2),"^r",label="HL")
-plot(fotones, 1 ./fotones,"^g",label="SQL")
-plot(fotones, 1 ./(fotones .*(2 .+fotones)),"y",label=label2)
-xscale("log")
-yscale("log")
-legend()
-grid()
-titulito=@sprintf("Squeezed Vacuum State, N=%i, dl=%1.1e",N,dl)
-title(titulito)
-xlabel("Número de fotones (sinh(r²))")
-ylabel("Delta phi^2")
-
-#title!("Squeezed state")
+if action=="F"
+	io=open(tipo*"_QFI_ideal.txt","w")
+	@printf(io,"#N=%i;	n=%i\n",N,nmax)
+	@printf(io,"fot, QFI\n")
+	for i=1:length(QFI)
+		@printf(io,"%9.7f %9.7f \n",photons[i],QFI[i])
+	end
+	close(io)
+elseif action=="P"
+	reg1=fit(log.(fotones),log.(1 ./QFI),1)
+	label1=@sprintf("QFI, m=%f",reg1[1])
+	plot(photons,1 ./QFI,"sb",label=label1)
+	plot(photons,1 ./(photons.^2),"^r",label="HL")
+	plot(photons, 1 ./photons,"^g",label="SQL")
+	xscale("log")
+	yscale("log")
+	legend()
+	grid()
+	xlabel("Average number of photons")
+	ylabel(L"$1/F_Q \propto \Delta \varphi^2$")
+end

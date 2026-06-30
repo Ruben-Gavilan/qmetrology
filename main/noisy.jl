@@ -1,7 +1,7 @@
 # Script to compute QFI for different states in noisy channel. To obtain QFI for GKP states use specific script.
 using Printf
 
-include("../modulos/fisher_functions.jl")
+include("../modules/fisher_functions.jl")
 N=80
 phi=2.0
 dl=1e-4
@@ -32,7 +32,7 @@ for n=1:nmax
 	rho2=rho2.states[1];
 	
 	drho= (rho1 - rho2) / (dl*2)
-	rho1=nothing
+	rho1=nothing # Erase density matrices as soon as possible to save memory
 	rho2=nothing
 	
 	rho0=mesolve(zero(tensor(eye(N),eye(N))),psi0,time,c_ops, e_ops=[ ],progress_bar=Val(false))
